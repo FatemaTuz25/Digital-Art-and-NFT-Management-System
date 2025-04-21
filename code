@@ -1,0 +1,244 @@
+// Digital art & NFT Management System
+//A C program that allows users secure login system for Admin and Employees
+//Add and manage art pieces[ID,Name,Artist type(Physical/ Digital),Category,Price,Stock,NFT token ID(if Digital)]
+//Search and Display art,Sell artworks and track sales,Sort and filter artworks
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX 100
+
+typedef struct {
+    int id;
+    char name[50];
+    char artistType[10];
+    char category[30];
+    float price;
+    int stock;
+    char nftTokenID[50];
+} Art;
+
+typedef struct {
+    char username[20];
+    char password[20];
+    char role[10];
+} User;
+
+Art artworks[MAX];
+int artCount = 0;
+float totalSales = 0.0;
+User loggedInUser;
+
+void addArtwork() {
+    if (artCount >= MAX) {
+        printf("Artwork storage full!\n");
+        return;
+    }
+
+    printf("Enter Artwork ID: ");
+    scanf("%d", &artworks[artCount].id);
+    printf("Enter Name: ");
+    scanf(" %[^\n]", artworks[artCount].name);
+    printf("Artist Type (Physical/Digital): ");
+    scanf(" %[^\n]", artworks[artCount].artistType);
+    printf("Enter Category: ");
+    scanf(" %[^\n]", artworks[artCount].category);
+    printf("Enter Price: ");
+    scanf("%f", &artworks[artCount].price);
+    printf("Enter Stock: ");
+    scanf("%d", &artworks[artCount].stock);
+
+    if (strcmp(artworks[artCount].artistType, "Digital") == 0) {
+        printf("Enter NFT Token ID: ");
+        scanf(" %[^\n]", artworks[artCount].nftTokenID);
+    } else {
+        strcpy(artworks[artCount].nftTokenID, "N/A");
+    }
+
+    artCount++;
+    printf("Artwork added successfully!\n");
+}
+
+void displayArtworks() {
+    if (artCount == 0) {
+        printf("No artworks to display.\n");
+        return;
+    }
+
+    printf("\n%-5s %-20s %-10s %-15s %-10s %-8s %-20s\n", "ID", "Name", "Type", "Category", "Price", "Stock", "NFT Token ID");
+    for (int i = 0; i < artCount; i++) {
+        printf("%-5d %-20s %-10s %-15s %-10.2f %-8d %-20s\n",
+               artworks[i].id, artworks[i].name, artworks[i].artistType,
+               artworks[i].category, artworks[i].price, artworks[i].stock,
+               artworks[i].nftTokenID);
+    }
+}
+
+void searchArtwork() {
+    int id, found = 0;
+    printf("Enter Artwork ID to search: ");
+    scanf("%d", &id);
+
+    for (int i = 0; i < artCount; i++) {
+        if (artworks[i].id == id) {
+            printf("Found:\nName: %s\nType: %s\nCategory: %s\nPrice: %.2f\nStock: %d\nNFT Token ID: %s\n",
+                   artworks[i].name, artworks[i].artistType, artworks[i].category,
+                   artworks[i].price, artworks[i].stock, artworks[i].nftTokenID);
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        printf("Artwork not found.\n");
+    }
+}
+
+void sellArtwork() {
+    int id;
+    printf("Enter Artwork ID to sell: ");
+    scanf("%d", &id);
+
+    for (int i = 0; i < artCount; i++) {
+        if (artworks[i].id == id) {
+            if (artworks[i].stock > 0) {
+                artworks[i].stock--;
+                totalSales += artworks[i].price;
+                printf("Artwork sold successfully! Total Sales: %.2f\n", totalSales);
+                return;
+            } else {
+                printf("Out of stock!\n");
+                return;
+            }
+        }
+    }
+    printf("Artwork not found.\n");
+}
+
+void sortArtworks() {
+    Art temp;
+    for (int i = 0; i < artCount - 1; i++) {
+        for (int j = i + 1; j < artCount; j++) {
+            if (artworks[i].price > artworks[j].price) {
+                temp = artworks[i];
+                artworks[i] = artworks[j];
+                artworks[j] = temp;
+            }
+        }
+    }
+    printf("Artworks sorted by price.\n");
+    displayArtworks();
+}
+
+void filterArtworks() {
+    printf("Digital Artworks with NFT:\n");
+    for (int i = 0; i < artCount; i++) {
+        if (strcmp(artworks[i].artistType, "Digital") == 0) {
+            printf("ID: %d, Name: %s, NFT Token ID: %s\n",
+                   artworks[i].id, artworks[i].name, artworks[i].nftTokenID);
+        }
+    }
+}
+
+void saveArtworks() {
+    FILE *fp = fopen("artworks.dat", "wb");
+    if (fp) {
+        fwrite(&artCount, sizeof(int), 1, fp);
+        fwrite(artworks, sizeof(Art), artCount, fp);
+        fclose(fp);
+    }
+}
+
+void loadArtworks() {
+    FILE *fp = fopen("artworks.dat", "rb");
+    if (fp) {
+        fread(&artCount, sizeof(int), 1, fp);
+        fread(artworks, sizeof(Art), artCount, fp);
+        fclose(fp);
+    }
+}
+
+void login() {
+    User users[] = {
+        {"admin", "admin123", "Admin"},
+        {"emp", "emp123", "Employee"}
+    };
+
+    char username[20], password[20];
+    int loggedIn = 0;
+
+    while (!loggedIn) {
+        printf("\n--- Login ---\n");
+        printf("Username: ");
+        scanf("%s", username);
+        printf("Password: ");
+        scanf("%s", password);
+
+        for (int i = 0; i < 2; i++) {
+            if (strcmp(username, users[i].username) == 0 &&
+                strcmp(password, users[i].password) == 0) {
+                loggedIn = 1;
+                loggedInUser = users[i];
+                printf("Welcome, %s (%s)!\n", users[i].username, users[i].role);
+                break;
+            }
+        }
+
+        if (!loggedIn) {
+            printf("Invalid username or password. Try again.\n");
+        }
+    }
+
+    int choice;
+do {
+        printf("\n--- Menu ---\n");
+        if (strcmp(loggedInUser.role, "Admin") == 0) {
+            printf("1. Add Artwork\n");
+        }
+        printf("2. Display All\n");
+        printf("3. Search\n");
+        printf("4. Sell\n");
+        printf("5. Sort by Price\n");
+        printf("6. Filter Digital\n");
+        printf("7. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                if (strcmp(loggedInUser.role, "Admin") == 0)
+                    addArtwork();
+                else
+                    printf("Access Denied: Only Admins can add artwork.\n");
+                break;
+            case 2:
+                displayArtworks();
+                break;
+            case 3:
+                searchArtwork();
+                break;
+            case 4:
+                sellArtwork();
+                break;
+            case 5:
+                sortArtworks();
+                break;
+            case 6:
+                filterArtworks();
+                break;
+            case 7:
+                saveArtworks();
+                printf("Exiting program...\n");
+                break;
+            default:
+                printf("Invalid choice.\n");
+        }
+    } while (choice != 7);
+}
+
+int main() {
+    loadArtworks();
+    login();
+    return 0;
+}
